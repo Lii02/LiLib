@@ -1,0 +1,72 @@
+# Li02 C++ formatting rules. See CPP_CONVENTIONS.md for the full guide.
+# Requires clang-format 16 or newer.
+---
+Language: Cpp
+BasedOnStyle: LLVM
+Standard: c++17
+
+# Indentation
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 4
+AccessModifierOffset: -4
+IndentCaseLabels: true
+NamespaceIndentation: None
+FixNamespaceComments: true
+IndentPPDirectives: None
+
+# Line length
+ColumnLimit: 140
+
+# Braces: K&R, always attached, always present
+BreakBeforeBraces: Attach
+InsertBraces: true
+AllowShortBlocksOnASingleLine: Never
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: InlineOnly
+AllowShortLambdasOnASingleLine: Inline
+
+# Spacing
+SpaceBeforeParens: Never
+SpaceAfterTemplateKeyword: false
+SpaceAfterCStyleCast: false
+SpaceBeforeAssignmentOperators: true
+SpacesBeforeTrailingComments: 1
+SpacesInAngles: Never
+Cpp11BracedListStyle: true
+
+# Pointers and references bind to the type: int* p, int& r
+DerivePointerAlignment: false
+PointerAlignment: Left
+ReferenceAlignment: Pointer
+
+# Templates and constructors
+AlwaysBreakTemplateDeclarations: Yes
+BreakConstructorInitializers: BeforeColon
+PackConstructorInitializers: NextLine
+
+# Blank lines
+MaxEmptyLinesToKeep: 1
+KeepEmptyLinesAtTheStartOfBlocks: false
+EmptyLineBeforeAccessModifier: LogicalBlock
+SeparateDefinitionBlocks: Leave
+InsertNewlineAtEOF: true
+
+# Includes: one block, ordered matching header > project "" > third-party <x.h> > standard <x>
+SortIncludes: CaseSensitive
+IncludeBlocks: Merge
+IncludeCategories:
+  - Regex: '^"'
+    Priority: 1
+  - Regex: '^<.*\.(h|hpp)>'
+    Priority: 2
+  - Regex: '^<'
+    Priority: 3
+
+# Comments
+ReflowComments: true
+...

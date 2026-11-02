@@ -1,0 +1,26 @@
+# Build output
+build/
+out/
+cmake-build-*/
+compile_commands.json
+
+# Compiled files
+*.exe
+*.dll
+*.lib
+*.a
+*.so
+*.dylib
+*.obj
+*.o
+*.pdb
+*.ilk
+
+# Clang tooling cache
+.cache/
+
+# Editors and IDEs
+.vs/
+.vscode/
+.idea/
+*.user

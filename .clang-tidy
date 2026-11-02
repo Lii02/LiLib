@@ -1,0 +1,81 @@
+# Li02 C++ lint and naming rules. See CPP_CONVENTIONS.md for the full guide.
+---
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-reserved-identifier,
+  cppcoreguidelines-avoid-non-const-global-variables,
+  cppcoreguidelines-no-malloc,
+  cppcoreguidelines-pro-type-cstyle-cast,
+  cppcoreguidelines-virtual-class-destructor,
+  misc-const-correctness,
+  misc-definitions-in-headers,
+  misc-unused-parameters,
+  modernize-*,
+  -modernize-use-auto,
+  -modernize-use-trailing-return-type,
+  -modernize-use-nodiscard,
+  -modernize-avoid-c-arrays,
+  -modernize-macro-to-enum,
+  -modernize-use-using,
+  performance-*,
+  -performance-enum-size,
+  readability-braces-around-statements,
+  readability-const-return-type,
+  readability-identifier-naming,
+  readability-make-member-function-const,
+  readability-redundant-*,
+  readability-qualified-auto
+
+# Naming violations fail the build; everything else is a warning.
+WarningsAsErrors: 'readability-identifier-naming'
+
+CheckOptions:
+  # Types
+  readability-identifier-naming.ClassCase: CamelCase
+  readability-identifier-naming.StructCase: CamelCase
+  readability-identifier-naming.AbstractClassCase: CamelCase
+  readability-identifier-naming.AbstractClassPrefix: I
+  readability-identifier-naming.EnumCase: CamelCase
+  readability-identifier-naming.EnumConstantCase: UPPER_CASE
+  readability-identifier-naming.ScopedEnumConstantCase: UPPER_CASE
+  readability-identifier-naming.TypedefCase: camelBack
+  readability-identifier-naming.TypedefSuffix: _t
+  readability-identifier-naming.TypeAliasCase: camelBack
+  readability-identifier-naming.TypeAliasSuffix: _t
+  readability-identifier-naming.TemplateParameterCase: CamelCase
+  readability-identifier-naming.NamespaceCase: CamelCase
+
+  # Functions
+  readability-identifier-naming.FunctionCase: CamelCase
+  readability-identifier-naming.MethodCase: CamelCase
+  readability-identifier-naming.PrivateMethodCase: CamelCase
+  readability-identifier-naming.PrivateMethodPrefix: _
+
+  # Variables
+  readability-identifier-naming.VariableCase: camelBack
+  readability-identifier-naming.LocalVariableCase: camelBack
+  readability-identifier-naming.ParameterCase: camelBack
+  readability-identifier-naming.MemberCase: camelBack
+  readability-identifier-naming.ClassMemberCase: CamelCase
+
+  # Constants: constexpr and namespace/class-scope constants are PascalCase,
+  # local const variables and const parameters stay camelCase
+  readability-identifier-naming.ConstexprVariableCase: CamelCase
+  readability-identifier-naming.GlobalConstantCase: CamelCase
+  readability-identifier-naming.StaticConstantCase: CamelCase
+  readability-identifier-naming.ClassConstantCase: CamelCase
+  readability-identifier-naming.LocalConstantCase: camelBack
+  readability-identifier-naming.ConstantParameterCase: camelBack
+  readability-identifier-naming.ConstantMemberCase: camelBack
+
+  # Macros: SCREAMING_SNAKE_CASE, function macros may also be camelCase
+  readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+  readability-identifier-naming.MacroDefinitionIgnoredRegexp: '^[a-z][a-zA-Z0-9]*$'
+
+  # Const correctness: flag values, not pointers/references
+  misc-const-correctness.AnalyzeValues: true
+  misc-const-correctness.AnalyzeReferences: false
+  misc-const-correctness.WarnPointersAsValues: false
+...
