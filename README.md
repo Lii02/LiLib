@@ -45,7 +45,7 @@ The library replaces the standard containers, strings and smart pointers, but it
 ## Requirements
 
 - A C++17 compiler
-- CMake 3.16 or newer
+- CMake 4.0 or newer
 - Exceptions enabled, because `Memory::New` uses `try`/`catch`
 - RTTI enabled, because `Memory::Delete` uses `dynamic_cast`. On Windows, a build with RTTI turned off (`/GR-` or `-fno-rtti`) still compiles, but aborted at runtime when tested
 
