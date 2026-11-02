@@ -40,24 +40,17 @@ public:
 
     ~SharedPtr() { _Release(); }
 
+    // Assignments take the new reference before releasing the old one, because other may live
+    // inside the object being released (as in node = node->next)
     SharedPtr& operator=(const SharedPtr& other) {
-        if(this != &other) {
-            _Release();
-            ptr = other.ptr;
-            control = other.control;
-            _AddRef();
-        }
+        SharedPtr copy(other);
+        _Swap(copy);
         return *this;
     }
 
     SharedPtr& operator=(SharedPtr&& other) noexcept {
-        if(this != &other) {
-            _Release();
-            ptr = other.ptr;
-            control = other.control;
-            other.ptr = nullptr;
-            other.control = nullptr;
-        }
+        SharedPtr moved(std::move(other));
+        _Swap(moved);
         return *this;
     }
 
@@ -105,14 +98,22 @@ private:
         }
     }
 
+    void _Swap(SharedPtr& other) {
+        Swap(ptr, other.ptr);
+        Swap(control, other.control);
+    }
+
     void _Release() {
-        // The thread that destroys the object must see every write other owners made to it, hence acq_rel
-        if(control && control->refCount.fetch_sub(1, std::memory_order_acq_rel) == 1) {
-            control->destroy(control->object);
-            Memory::Delete(control);
-        }
+        // Clear the members first: destroying the object can destroy this pointer too, if the object owns it
+        SharedControl* released = control;
         ptr = nullptr;
         control = nullptr;
+
+        // The thread that destroys the object must see every write other owners made to it, hence acq_rel
+        if(released && released->refCount.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+            released->destroy(released->object);
+            Memory::Delete(released);
+        }
     }
 
     T* ptr = nullptr;
