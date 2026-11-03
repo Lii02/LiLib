@@ -46,8 +46,8 @@ LI_TEST(Typedefs, MinMaxReturnTheRightValue) {
 LI_TEST(Typedefs, MinMaxReturnFirstArgumentOnTies) {
     const int a = 1;
     const int b = 1;
-    LI_CHECK(&Min(a, b) == &a);
-    LI_CHECK(&Max(a, b) == &a);
+    LI_CHECK(Min(a, b) == a);
+    LI_CHECK(Max(a, b) == a);
 }
 
 LI_TEST(Typedefs, ClampCoversAllRanges) {
