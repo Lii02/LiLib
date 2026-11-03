@@ -62,7 +62,7 @@ add_subdirectory(path/to/liLib)
 target_link_libraries(MyApp PRIVATE LiLib::LiLib)
 ```
 
-Headers are then included by their full path, such as `#include "LiLib/Strings/String.h"`.
+Include individual headers by their full path, such as `#include "LiLib/Strings/String.h"`. To include all LiLib headers, use `#include "LiLib/LiLib.h"`.
 
 ## Building
 
