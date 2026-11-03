@@ -30,8 +30,8 @@ public:
     StringView Trimmed() const;
 
     // Lowercase begin/end are required by range-based for loops
-    const char* begin() const { return data; }        // NOLINT(readability-identifier-naming)
-    const char* end() const { return data + length; } // NOLINT(readability-identifier-naming)
+    const char* begin() const { return data; }
+    const char* end() const { return data + length; }
 
 private:
     const char* data = nullptr;

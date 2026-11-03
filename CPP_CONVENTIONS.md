@@ -2,27 +2,22 @@
 
 These are my go-to conventions for C++ projects. The goal is readability and consistency, built on modern C++17.
 
-Most of these rules are enforced automatically:
+[`.clang-format`](.clang-format) enforces layout automatically: indentation, braces, spacing, include order.
 
-* [`.clang-format`](.clang-format) handles layout: indentation, braces, spacing, include order.
-* [`.clang-tidy`](.clang-tidy) handles naming and common mistakes.
-
-Rules marked **(review)** can't be checked by tools and are enforced in code review.
+Everything else is enforced in code review, including the rules marked **(review)**.
 
 ---
 
 ## 🛠️ Tooling
 
-Drop both files in the root of a project. Most editors pick them up automatically (Visual Studio, VS Code with the C/C++ extension, CLion, Rider).
+Drop `.clang-format` in the root of a project. Most editors pick it up automatically (Visual Studio, VS Code with the C/C++ extension, CLion, Rider).
 
 ```sh
 clang-format -i src/*.cpp src/*.h             # Format files in place
 clang-format --dry-run --Werror src/*.cpp     # Check formatting (for CI)
-clang-tidy src/*.cpp -p build                 # Lint, using build/compile_commands.json
 ```
 
 * `.clang-format` requires **clang-format 16 or newer**.
-* Naming violations are errors in clang-tidy. Everything else is a warning.
 
 ---
 
@@ -174,8 +169,8 @@ printf("World"); */ // Not allowed
 
 * **Getters** may start with `Get`. **Setters** must start with `Set`.
 * **Member variables** have no prefix. Use `this->` when a parameter shadows a member.
-* **Private methods:** names starting with `_` and a capital letter are technically reserved by the C++ standard. This is a deliberate choice; it works on MSVC, GCC and Clang. (clang-tidy's `bugprone-reserved-identifier` is disabled for this reason.)
-* **Interfaces:** clang-tidy treats any abstract type (one with a pure virtual method) as an interface and requires the `I` prefix.
+* **Private methods:** names starting with `_` and a capital letter are technically reserved by the C++ standard. This is a deliberate choice; it works on MSVC, GCC and Clang.
+* **Interfaces:** any abstract type (one with a pure virtual method) counts as an interface and needs the `I` prefix.
 
 ---
 
@@ -321,7 +316,7 @@ Any other use needs a justification in the code review.
 
 ### Global Variables
 
-Mutable global variables are **not allowed** (clang-tidy warns). Use singletons for true global services, static class members, or pass dependencies in.
+Mutable global variables are **not allowed**. Use singletons for true global services, static class members, or pass dependencies in.
 
 ```cpp
 class System {

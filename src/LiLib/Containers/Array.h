@@ -4,6 +4,7 @@
 #include "LiLib/Memory/Memory.h"
 #include <initializer_list>
 #include <new>
+#include <utility>
 
 namespace LiLib {
 
@@ -17,41 +18,19 @@ public:
 
     Array() = default;
 
-    Array(std::initializer_list<T> values) {
-        Reserve(values.size());
-        for(const T& value : values) {
-            new(data + size) T(value);
-            ++size;
-        }
-    }
-
-    Array(const Array& other) {
-        Reserve(other.size);
-        for(size_t i = 0; i < other.size; ++i) {
-            new(data + i) T(other.data[i]);
-        }
-        size = other.size;
-    }
-
-    Array(Array&& other) noexcept : data(other.data), size(other.size), capacity(other.capacity) {
-        other.data = nullptr;
-        other.size = 0;
-        other.capacity = 0;
-    }
+    Array(std::initializer_list<T> values) { _AppendRange(values.begin(), values.size()); }
+    Array(const Array& other) { _AppendRange(other.data, other.size); }
+    Array(Array&& other) noexcept { _TakeStorage(other); }
 
     ~Array() {
         Clear();
-        _FreeStorage(data);
+        Memory::Free(data);
     }
 
     Array& operator=(const Array& other) {
         if(this != &other) {
             Clear();
-            Reserve(other.size);
-            for(size_t i = 0; i < other.size; ++i) {
-                new(data + i) T(other.data[i]);
-            }
-            size = other.size;
+            _AppendRange(other.data, other.size);
         }
         return *this;
     }
@@ -59,13 +38,8 @@ public:
     Array& operator=(Array&& other) noexcept {
         if(this != &other) {
             Clear();
-            _FreeStorage(data);
-            data = other.data;
-            size = other.size;
-            capacity = other.capacity;
-            other.data = nullptr;
-            other.size = 0;
-            other.capacity = 0;
+            Memory::Free(data);
+            _TakeStorage(other);
         }
         return *this;
     }
@@ -95,22 +69,12 @@ public:
         if(newCapacity <= capacity) {
             return;
         }
-        T* newData = static_cast<T*>(Memory::Allocate(newCapacity * sizeof(T), alignof(T)));
-        LI_VERIFY(newData != nullptr, "Array allocation failed");
-        for(size_t i = 0; i < size; ++i) {
-            new(newData + i) T(std::move(data[i]));
-            data[i].~T();
-        }
-        _FreeStorage(data);
-        data = newData;
-        capacity = newCapacity;
+        _AdoptStorage(_AllocateStorage(newCapacity), newCapacity);
     }
 
     void Resize(size_t newSize) {
         Reserve(newSize);
-        while(size > newSize) {
-            Pop();
-        }
+        _ShrinkTo(newSize);
         while(size < newSize) {
             new(data + size) T();
             ++size;
@@ -118,14 +82,15 @@ public:
     }
 
     void Resize(size_t newSize, const T& fill) {
-        Reserve(newSize);
-        while(size > newSize) {
-            Pop();
+        if(newSize > capacity) {
+            // fill may live inside this array, so copy it before reallocating
+            const T copy(fill);
+            Reserve(newSize);
+            _AppendCopies(newSize, copy);
+            return;
         }
-        while(size < newSize) {
-            new(data + size) T(fill);
-            ++size;
-        }
+        _ShrinkTo(newSize);
+        _AppendCopies(newSize, fill);
     }
 
     void Clear() {
@@ -135,35 +100,20 @@ public:
         size = 0;
     }
 
-    T& Push(const T& value) {
-        if(size == capacity) {
-            // value may live inside this array, so copy it before reallocating
-            T copy(value);
-            _Grow(size + 1);
-            new(data + size) T(std::move(copy));
-        } else {
-            new(data + size) T(value);
-        }
-        return data[size++];
-    }
-
-    T& Push(T&& value) {
-        if(size == capacity) {
-            T moved(std::move(value));
-            _Grow(size + 1);
-            new(data + size) T(std::move(moved));
-        } else {
-            new(data + size) T(std::move(value));
-        }
-        return data[size++];
-    }
+    T& Push(const T& value) { return Emplace(value); }
+    T& Push(T&& value) { return Emplace(std::move(value)); }
 
     template<typename... TArgs>
     T& Emplace(TArgs&&... args) {
         if(size == capacity) {
-            _Grow(size + 1);
+            // args may refer to this array's elements, so construct before relocating them
+            const size_t newCapacity = _NextCapacity();
+            T* newData = _AllocateStorage(newCapacity);
+            new(newData + size) T(std::forward<TArgs>(args)...);
+            _AdoptStorage(newData, newCapacity);
+        } else {
+            new(data + size) T(std::forward<TArgs>(args)...);
         }
-        new(data + size) T(std::forward<TArgs>(args)...);
         return data[size++];
     }
 
@@ -173,22 +123,12 @@ public:
         data[size].~T();
     }
 
-    void Insert(size_t index, T value) {
-        LI_ASSERT(index <= size, "Insert index out of range");
-        if(size == capacity) {
-            _Grow(size + 1);
-        }
-        if(index == size) {
-            new(data + size) T(std::move(value));
-        } else {
-            new(data + size) T(std::move(data[size - 1]));
-            for(size_t i = size - 1; i > index; --i) {
-                data[i] = std::move(data[i - 1]);
-            }
-            data[index] = std::move(value);
-        }
-        ++size;
+    void Insert(size_t index, const T& value) {
+        T copy(value);
+        _InsertOwned(index, std::move(copy));
     }
+
+    void Insert(size_t index, T&& value) { _InsertOwned(index, std::move(value)); }
 
     /*
      * @brief Removes the element at index, keeping the order of the remaining elements.
@@ -244,9 +184,7 @@ public:
             }
         }
         const size_t removed = size - write;
-        while(size > write) {
-            Pop();
-        }
+        _ShrinkTo(write);
         return removed;
     }
 
@@ -261,21 +199,80 @@ public:
     }
 
     // Lowercase begin/end are required by range-based for loops
-    T* begin() { return data; }                  // NOLINT(readability-identifier-naming)
-    T* end() { return data + size; }             // NOLINT(readability-identifier-naming)
-    const T* begin() const { return data; }      // NOLINT(readability-identifier-naming)
-    const T* end() const { return data + size; } // NOLINT(readability-identifier-naming)
+    T* begin() { return data; }
+    T* end() { return data + size; }
+    const T* begin() const { return data; }
+    const T* end() const { return data + size; }
 
 private:
-    void _Grow(size_t minCapacity) {
-        size_t newCapacity = capacity < 8 ? 8 : capacity * 2;
-        if(newCapacity < minCapacity) {
-            newCapacity = minCapacity;
-        }
-        Reserve(newCapacity);
+    static constexpr size_t MinCapacity = 8;
+
+    size_t _NextCapacity() const { return capacity < MinCapacity ? MinCapacity : capacity * 2; }
+
+    static T* _AllocateStorage(size_t newCapacity) {
+        T* storage = static_cast<T*>(Memory::Allocate(newCapacity * sizeof(T), alignof(T)));
+        LI_VERIFY(storage != nullptr, "Array allocation failed");
+        return storage;
     }
 
-    static void _FreeStorage(T* storage) { Memory::Free(storage); }
+    void _AdoptStorage(T* newData, size_t newCapacity) {
+        for(size_t i = 0; i < size; ++i) {
+            new(newData + i) T(std::move(data[i]));
+            data[i].~T();
+        }
+        Memory::Free(data);
+        data = newData;
+        capacity = newCapacity;
+    }
+
+    void _TakeStorage(Array& other) {
+        data = other.data;
+        size = other.size;
+        capacity = other.capacity;
+        other.data = nullptr;
+        other.size = 0;
+        other.capacity = 0;
+    }
+
+    void _AppendRange(const T* values, size_t count) {
+        Reserve(size + count);
+        for(size_t i = 0; i < count; ++i) {
+            new(data + size) T(values[i]);
+            ++size;
+        }
+    }
+
+    void _AppendCopies(size_t newSize, const T& fill) {
+        while(size < newSize) {
+            new(data + size) T(fill);
+            ++size;
+        }
+    }
+
+    void _ShrinkTo(size_t newSize) {
+        while(size > newSize) {
+            Pop();
+        }
+    }
+
+    void _InsertOwned(size_t index, T&& value) {
+        LI_ASSERT(index <= size, "Insert index out of range");
+        // value may live inside this array, so take it out before shifting or reallocating
+        T owned(std::move(value));
+        if(size == capacity) {
+            Reserve(_NextCapacity());
+        }
+        if(index == size) {
+            new(data + size) T(std::move(owned));
+        } else {
+            new(data + size) T(std::move(data[size - 1]));
+            for(size_t i = size - 1; i > index; --i) {
+                data[i] = std::move(data[i - 1]);
+            }
+            data[index] = std::move(owned);
+        }
+        ++size;
+    }
 
     T* data = nullptr;
     size_t size = 0;

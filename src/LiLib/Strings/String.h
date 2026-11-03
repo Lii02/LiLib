@@ -67,8 +67,8 @@ public:
     double ToDouble(double fallback = 0.0) const;
 
     // Lowercase begin/end are required by range-based for loops
-    const char* begin() const { return data; }        // NOLINT(readability-identifier-naming)
-    const char* end() const { return data + length; } // NOLINT(readability-identifier-naming)
+    const char* begin() const { return data; }
+    const char* end() const { return data + length; }
 
 private:
     static constexpr size_t InlineCapacity = 23;

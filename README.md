@@ -69,15 +69,39 @@ cmake -S . -B build
 cmake --build build
 ```
 
-This builds the static library. The repo doesn't have a test suite yet.
+This builds the static library and, when liLib is the top-level project, the unit tests. To leave the tests out, configure with `-DLILIB_BUILD_TESTS=OFF`. They're off by default when liLib is added to another project as a subdirectory.
+
+## Testing
+
+```sh
+ctest --test-dir build -C Debug --output-on-failure
+```
+
+The tests are in `tests/` and use a small built-in framework, described in `tests/TestFramework.h`. After each test, it also checks that everything allocated through `Memory` was freed. To run the test program directly, or to run only some of the tests:
+
+```sh
+build/tests/liLibTests                 # Run everything (Visual Studio builds are in build/tests/Debug/)
+build/tests/liLibTests Array.          # Run tests whose "Suite.Name" contains the text
+build/tests/liLibTests --list          # List all tests
+```
+
+Run the tests under AddressSanitizer as well when changing anything that manages memory, because some bugs only show up there:
+
+```sh
+cmake -S . -B build/asan -G Ninja -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_FLAGS=-fsanitize=address "-DCMAKE_CXX_FLAGS_RELWITHDEBINFO=-O0 -g"
+cmake --build build/asan
+ctest --test-dir build/asan --output-on-failure
+```
+
+- **Keep it at `-O0`:** with clang on Windows, AddressSanitizer at `-O1` or higher crashes on `throw;`, even in a program that doesn't use liLib.
+- **Windows `PATH`:** the folder containing `clang_rt.asan_dynamic-x86_64.dll` must be on your `PATH`. It's in clang's `lib/clang/<version>/lib/windows` folder.
 
 ## Contributing
 
-Code follows [CPP_CONVENTIONS.md](CPP_CONVENTIONS.md), which `.clang-format` and `.clang-tidy` enforce:
+Code follows [CPP_CONVENTIONS.md](CPP_CONVENTIONS.md). `.clang-format` enforces the layout rules:
 
 ```sh
 clang-format --dry-run --Werror src/LiLib/Math/Mat4.cpp   # Check formatting of a file
-clang-tidy src/LiLib/Math/Mat4.cpp -p build               # Lint, using build/compile_commands.json
 ```
 
 New `.cpp` and `.h` files anywhere under `src/` are picked up by the build automatically. Keep headers inside `src/LiLib/`, not directly in `src/`. On case-insensitive filesystems, a `src/String.h` would be picked up in place of the system `<string.h>`.

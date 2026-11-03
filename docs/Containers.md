@@ -56,7 +56,7 @@ values.RemoveIf([](int value) { return value > 3; }); // 1 2
 | `Remove(value)` | Removes the first match and returns whether it found one. Needs `==` |
 | `RemoveIf(predicate)` | Removes all matches and returns how many |
 
-Anything that grows the array can reallocate it, which invalidates pointers, references and iterators to its elements. Passing one of the array's own elements to `Push` is safe.
+Anything that grows the array can reallocate it, which invalidates pointers, references and iterators to its elements. Passing one of the array's own elements to `Push`, `Emplace`, `Insert` or `Resize` is safe.
 
 ## HashMap
 

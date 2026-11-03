@@ -192,10 +192,10 @@ public:
     }
 
     // Lowercase begin/end are required by range-based for loops
-    iterator_t begin() { return iterator_t(this, 0); }                      // NOLINT(readability-identifier-naming)
-    iterator_t end() { return iterator_t(this, capacity); }                 // NOLINT(readability-identifier-naming)
-    constIterator_t begin() const { return constIterator_t(this, 0); }      // NOLINT(readability-identifier-naming)
-    constIterator_t end() const { return constIterator_t(this, capacity); } // NOLINT(readability-identifier-naming)
+    iterator_t begin() { return iterator_t(this, 0); }
+    iterator_t end() { return iterator_t(this, capacity); }
+    constIterator_t begin() const { return constIterator_t(this, 0); }
+    constIterator_t end() const { return constIterator_t(this, capacity); }
 
 private:
     template<typename TLookup>
