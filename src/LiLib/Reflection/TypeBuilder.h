@@ -65,12 +65,20 @@ constexpr PropertyKind KindOf() {
         return PropertyKind::VECTOR2;
     } else if constexpr(std::is_same_v<TValue, Vec3>) {
         return PropertyKind::VECTOR3;
+    } else if constexpr(std::is_same_v<TValue, Vec4>) {
+        return PropertyKind::VECTOR4;
+    } else if constexpr(std::is_same_v<TValue, Quat>) {
+        return PropertyKind::QUAT;
+    } else if constexpr(std::is_same_v<TValue, AABB>) {
+        return PropertyKind::AABB;
+    } else if constexpr(std::is_same_v<TValue, Frustum>) {
+        return PropertyKind::FRUSTUM;
     } else if constexpr(std::is_same_v<TValue, Color>) {
         return PropertyKind::COLOR;
     } else if constexpr(std::is_same_v<TValue, String>) {
         return PropertyKind::TEXT;
-    } else if constexpr(std::is_same_v<TValue, Array<int>>) {
-        return PropertyKind::INT_ARRAY;
+    } else if constexpr(std::is_same_v<TValue, Array<Variant>>) {
+        return PropertyKind::ARRAY;
     } else {
         static_assert(sizeof(TValue) == 0, "No property kind for this type; specialize VariantTraits or use Enum()");
         return PropertyKind::INT;
@@ -130,8 +138,8 @@ public:
     }
 
     /*
-     * @brief A data member. The kind follows the member's type: bool, integer, float, Vec2, Color,
-     *        String or Array<int>.
+     * @brief A data member. The kind follows the member's type: bool, integer, float, Vec2, Vec3, Vec4, Quat,
+     *        AABB, Frustum, Color, String or Array<Variant>.
      */
     template<typename TValue, typename TClass>
     TypeBuilder& Property(const char* name, TValue TClass::* member, PropertyHint hint = PropertyHint::NONE) {

@@ -36,7 +36,11 @@ int main() {
 
 `GetType<T>()` registers the type on first use. Call `FindType()` to look up a type by its declared name. Register base classes with `type.Base<Base>()`; their properties and methods are then available through the derived type. Default-constructible, non-abstract types can be created with `TypeInfo::Construct()` and released with `TypeInfo::Destroy()`.
 
-Properties support `bool`, integral and floating-point values, `Vec2`, `Vec3`, `Color`, `String`, and `Array<int>`. Use `Enum()` for a value represented by named options, `Accessor()` for getter/setter-backed properties, and `ReadOnly()` for computed values. `Serialized()`, `Editable()`, and `Scriptable()` set metadata on the most recently added property. Specialize `VariantTraits<T>` to expose additional types in properties, methods, and globals.
+Properties support `bool`, integral and floating-point values, `Vec2`, `Vec3`, `Vec4`, `Quat`, `AABB`, `Frustum`, `Color`, `String`, and `Array<Variant>`. Use `Enum()` for a value represented by named options, `Accessor()` for getter/setter-backed properties, and `ReadOnly()` for computed values. `Serialized()`, `Editable()`, and `Scriptable()` set metadata on the most recently added property. Specialize `VariantTraits<T>` to expose additional types in properties, methods, and globals.
+
+## Variant
+
+`Variant` is the type-erased value used for property values, method arguments, return values, and globals. It holds one of: none, `bool`, signed or unsigned integer, `double`, `Vec2`, `Vec3`, `Vec4`, `Quat`, `AABB`, `Frustum`, `Color`, `String`, an array of `Variant`s (which can nest), or an `ObjectRef` (a non-owning pointer plus its `TypeInfo`). Create one with `Variant::FromX()`, check it with `GetType()`, and read it with `AsX()`, which returns a fallback when the type doesn't match. Use `AsArray()` to read an array.
 
 ## Registering application values
 

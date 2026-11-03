@@ -1,8 +1,12 @@
 #pragma once
 #include "LiLib/Containers/Array.h"
+#include "LiLib/Math/AABB.h"
 #include "LiLib/Math/Color.h"
+#include "LiLib/Math/Frustum.h"
+#include "LiLib/Math/Quat.h"
 #include "LiLib/Math/Vec2.h"
 #include "LiLib/Math/Vec3.h"
+#include "LiLib/Math/Vec4.h"
 #include "LiLib/Strings/String.h"
 
 namespace LiLib {
@@ -17,9 +21,13 @@ enum class VariantType : uint8_t {
     FLOAT,
     VEC2,
     VEC3,
+    VEC4,
+    QUAT,
+    AABB,
+    FRUSTUM,
     COLOR,
     STRING,
-    INT_ARRAY,
+    ARRAY,
     OBJECT
 };
 
@@ -39,6 +47,11 @@ struct ObjectRef {
 class Variant {
 public:
     Variant() = default;
+    Variant(const Variant& other);
+    Variant(Variant&& other) noexcept;
+    Variant& operator=(const Variant& other);
+    Variant& operator=(Variant&& other) noexcept;
+    ~Variant();
 
     static Variant FromBool(bool value);
     static Variant FromInt(int64_t value);
@@ -46,9 +59,13 @@ public:
     static Variant FromFloat(double value);
     static Variant FromVec2(Vec2 value);
     static Variant FromVec3(Vec3 value);
+    static Variant FromVec4(Vec4 value);
+    static Variant FromQuat(Quat value);
+    static Variant FromAABB(AABB value);
+    static Variant FromFrustum(Frustum value);
     static Variant FromColor(Color value);
     static Variant FromString(StringView value);
-    static Variant FromIntArray(const Array<int>& value);
+    static Variant FromArray(const Array<Variant>& value);
     static Variant FromObject(ObjectRef value);
 
     VariantType GetType() const { return type; }
@@ -63,10 +80,20 @@ public:
     double AsFloat(double fallback = 0.0) const;
     Vec2 AsVec2(Vec2 fallback = {0.0f, 0.0f}) const;
     Vec3 AsVec3(Vec3 fallback = {0.0f, 0.0f, 0.0f}) const;
+    Vec4 AsVec4(Vec4 fallback = {0.0f, 0.0f, 0.0f, 0.0f}) const;
+    Quat AsQuat(Quat fallback = Quat::Identity()) const;
+    AABB AsAABB(AABB fallback = {}) const;
+    Frustum AsFrustum(Frustum fallback = {}) const;
     Color AsColor(Color fallback = Colors::White) const;
     StringView AsString(StringView fallback = StringView()) const;
-    const Array<int>& AsIntArray() const { return intArray; }
-    ObjectRef AsObject() const { return type == VariantType::OBJECT ? object : ObjectRef{}; }
+    const Array<Variant>& AsArray() const {
+        if(type == VariantType::ARRAY) {
+            return data.array;
+        }
+        static const Array<Variant> empty;
+        return empty;
+    }
+    ObjectRef AsObject() const { return type == VariantType::OBJECT ? data.object : ObjectRef{}; }
 
     /*
      * @brief Whether the value can be read as target. Numeric types convert freely between each other.
@@ -74,19 +101,32 @@ public:
     bool CanConvertTo(VariantType target) const;
 
 private:
-    VariantType type = VariantType::NONE;
-    union {
+    union Storage {
+        Storage() {}
+        ~Storage() {}
+
         bool boolean;
-        int64_t sint;
-        uint64_t uint;
-        double real;
-    } scalar = {};
-    Vec2 vec2 = {0.0f, 0.0f};
-    Vec3 vec3 = {0.0f, 0.0f, 0.0f};
-    Color color = Colors::White;
-    String text;
-    Array<int> intArray;
-    ObjectRef object;
+        int64_t integer;
+        uint64_t uinteger;
+        double number;
+        Vec2 vec2;
+        Vec3 vec3;
+        Vec4 vec4;
+        Quat quat;
+        AABB aabb;
+        Frustum frustum;
+        Color color;
+        String string;
+        Array<Variant> array;
+        ObjectRef object;
+    };
+
+    void _Destroy();
+    void _CopyFrom(const Variant& other);
+    void _MoveFrom(Variant& other);
+
+    VariantType type = VariantType::NONE;
+    Storage data;
 };
 
 } // namespace LiLib

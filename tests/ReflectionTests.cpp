@@ -40,11 +40,28 @@ struct ReflectDerived : ReflectBase {
     }
 };
 
+struct ReflectMathTypes {
+    static constexpr const char* TypeName = "Reflection.MathTypes";
+
+    Vec4 vector = {1.0f, 2.0f, 3.0f, 4.0f};
+    Quat rotation = {0.1f, 0.2f, 0.3f, 0.9f};
+    AABB bounds;
+    Frustum frustum;
+
+    static void Reflect(TypeBuilder<ReflectMathTypes>& type) {
+        type.Property("vector", &ReflectMathTypes::vector)
+            .Property("rotation", &ReflectMathTypes::rotation)
+            .Property("bounds", &ReflectMathTypes::bounds)
+            .Property("frustum", &ReflectMathTypes::frustum);
+    }
+};
+
 int reflectedGlobal = 11;
 const int reflectedReadOnlyGlobal = 23;
 
 [[maybe_unused]] const bool reflectionFixturesRegistered = [] {
     Reflection::GetType<ReflectDerived>();
+    Reflection::GetType<ReflectMathTypes>();
     Reflection::RegisterFunction("Reflection.AddGlobal", +[](int left, int right) { return left + right; });
     Reflection::RegisterGlobalVariable("Reflection.Global", &reflectedGlobal);
     Reflection::RegisterGlobalVariable("Reflection.ReadOnly", &reflectedReadOnlyGlobal);
@@ -75,6 +92,86 @@ LI_TEST(Reflection, RegistersPropertiesAndInheritance) {
     LI_REQUIRE(doubled != nullptr);
     LI_CHECK(type.GetValue(&object, *doubled).AsInt() == 24);
     LI_CHECK(!type.SetValue(&object, *doubled, Variant::FromInt(0)));
+}
+
+LI_TEST(Reflection, SupportsAdditionalMathTypes) {
+    ReflectMathTypes object;
+    object.bounds.min = {-1.0f, -2.0f, -3.0f};
+    object.bounds.max = {1.0f, 2.0f, 3.0f};
+    object.frustum.planes[0] = {{0.0f, 1.0f, 0.0f}, 5.0f};
+
+    const TypeInfo& type = Reflection::GetType<ReflectMathTypes>();
+    const PropertyInfo* vector = type.FindProperty("vector");
+    const PropertyInfo* rotation = type.FindProperty("rotation");
+    const PropertyInfo* bounds = type.FindProperty("bounds");
+    const PropertyInfo* frustum = type.FindProperty("frustum");
+    LI_REQUIRE(vector != nullptr);
+    LI_REQUIRE(rotation != nullptr);
+    LI_REQUIRE(bounds != nullptr);
+    LI_REQUIRE(frustum != nullptr);
+    LI_CHECK(vector->kind == PropertyKind::VECTOR4);
+    LI_CHECK(rotation->kind == PropertyKind::QUAT);
+    LI_CHECK(bounds->kind == PropertyKind::AABB);
+    LI_CHECK(frustum->kind == PropertyKind::FRUSTUM);
+
+    const Vec4 newVector = {5.0f, 6.0f, 7.0f, 8.0f};
+    LI_CHECK(type.SetValue(&object, *vector, VariantTraits<Vec4>::To(newVector)));
+    LI_CHECK(object.vector == newVector);
+
+    const Quat newRotation = {0.4f, 0.3f, 0.2f, 0.8f};
+    LI_CHECK(type.SetValue(&object, *rotation, VariantTraits<Quat>::To(newRotation)));
+    LI_CHECK(object.rotation == newRotation);
+
+    AABB newBounds;
+    newBounds.min = {-4.0f, -5.0f, -6.0f};
+    newBounds.max = {4.0f, 5.0f, 6.0f};
+    LI_CHECK(type.SetValue(&object, *bounds, VariantTraits<AABB>::To(newBounds)));
+    LI_CHECK(object.bounds.min == newBounds.min);
+    LI_CHECK(object.bounds.max == newBounds.max);
+
+    Frustum newFrustum;
+    newFrustum.planes[3] = {{1.0f, 0.0f, 0.0f}, -2.0f};
+    LI_CHECK(type.SetValue(&object, *frustum, VariantTraits<Frustum>::To(newFrustum)));
+    const Frustum actualFrustum = type.GetValue(&object, *frustum).AsFrustum();
+    LI_CHECK(actualFrustum.planes[3].normal == newFrustum.planes[3].normal);
+    LI_CHECK(actualFrustum.planes[3].distance == newFrustum.planes[3].distance);
+
+    Variant copiedMath = VariantTraits<Vec4>::To(newVector);
+    LI_CHECK(copiedMath.AsVec4() == newVector);
+    copiedMath = VariantTraits<Frustum>::To(newFrustum);
+    LI_CHECK(copiedMath.AsFrustum().planes[3].normal == newFrustum.planes[3].normal);
+    LI_CHECK(copiedMath.AsFrustum().planes[3].distance == newFrustum.planes[3].distance);
+}
+
+LI_TEST(Reflection, VariantStoresOneActiveValue) {
+    Variant value;
+    LI_CHECK(value.GetType() == VariantType::NONE);
+    LI_CHECK(!value.IsValid());
+
+    value = Variant::FromInt(42);
+    LI_CHECK(value.GetType() == VariantType::INT);
+    LI_CHECK(value.AsInt() == 42);
+
+    value = Variant::FromString("stored text");
+    LI_CHECK(value.GetType() == VariantType::STRING);
+    LI_CHECK(value.AsString() == "stored text");
+
+    const Array<Variant> values = {Variant::FromInt(1), Variant::FromString("two"), Variant::FromBool(true)};
+    value = Variant::FromArray(values);
+    LI_CHECK(value.GetType() == VariantType::ARRAY);
+    LI_REQUIRE(value.AsArray().Size() == 3);
+    LI_CHECK(value.AsArray()[0].AsInt() == 1);
+    LI_CHECK(value.AsArray()[1].AsString() == "two");
+    LI_CHECK(value.AsArray()[2].AsBool());
+
+    const Array<Variant> nested = {value};
+    value = Variant::FromArray(nested);
+    LI_REQUIRE(value.AsArray().Size() == 1);
+    LI_CHECK(value.AsArray()[0].AsArray().Size() == 3);
+
+    value = Variant::FromBool(true);
+    LI_CHECK(value.GetType() == VariantType::BOOL);
+    LI_CHECK(value.AsBool());
 }
 
 LI_TEST(Reflection, InvokesMethodsAndConvertsObjectPointers) {

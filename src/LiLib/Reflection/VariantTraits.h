@@ -92,6 +92,50 @@ public:
 };
 
 template<>
+class VariantTraits<Vec4> {
+public:
+    static constexpr VariantType Type = VariantType::VEC4;
+    static Variant To(Vec4 value) { return Variant::FromVec4(value); }
+    static bool From(const Variant& variant, Vec4& out) {
+        out = variant.AsVec4();
+        return variant.CanConvertTo(Type);
+    }
+};
+
+template<>
+class VariantTraits<Quat> {
+public:
+    static constexpr VariantType Type = VariantType::QUAT;
+    static Variant To(Quat value) { return Variant::FromQuat(value); }
+    static bool From(const Variant& variant, Quat& out) {
+        out = variant.AsQuat();
+        return variant.CanConvertTo(Type);
+    }
+};
+
+template<>
+class VariantTraits<AABB> {
+public:
+    static constexpr VariantType Type = VariantType::AABB;
+    static Variant To(AABB value) { return Variant::FromAABB(value); }
+    static bool From(const Variant& variant, AABB& out) {
+        out = variant.AsAABB();
+        return variant.CanConvertTo(Type);
+    }
+};
+
+template<>
+class VariantTraits<Frustum> {
+public:
+    static constexpr VariantType Type = VariantType::FRUSTUM;
+    static Variant To(Frustum value) { return Variant::FromFrustum(value); }
+    static bool From(const Variant& variant, Frustum& out) {
+        out = variant.AsFrustum();
+        return variant.CanConvertTo(Type);
+    }
+};
+
+template<>
 class VariantTraits<Color> {
 public:
     static constexpr VariantType Type = VariantType::COLOR;
@@ -126,12 +170,12 @@ public:
 };
 
 template<>
-class VariantTraits<Array<int>> {
+class VariantTraits<Array<Variant>> {
 public:
-    static constexpr VariantType Type = VariantType::INT_ARRAY;
-    static Variant To(const Array<int>& value) { return Variant::FromIntArray(value); }
-    static bool From(const Variant& variant, Array<int>& out) {
-        out = variant.AsIntArray();
+    static constexpr VariantType Type = VariantType::ARRAY;
+    static Variant To(const Array<Variant>& value) { return Variant::FromArray(value); }
+    static bool From(const Variant& variant, Array<Variant>& out) {
+        out = variant.AsArray();
         return variant.CanConvertTo(Type);
     }
 };

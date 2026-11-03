@@ -29,10 +29,14 @@ enum class PropertyKind : uint8_t {
     FLOAT,
     VECTOR2,
     VECTOR3,
+    VECTOR4,
+    QUAT,
+    AABB,
+    FRUSTUM,
     COLOR,
     TEXT,
     ENUM,
-    INT_ARRAY,
+    ARRAY,
     HEADER // Not a value: a section title in the inspector
 };
 
