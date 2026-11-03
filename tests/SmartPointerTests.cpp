@@ -3,6 +3,8 @@
 #include "LiLib/Threading/Thread.h"
 #include "TestFramework.h"
 #include <atomic>
+#include <condition_variable>
+#include <mutex>
 #include <type_traits>
 
 using namespace LiLib;
@@ -318,7 +320,7 @@ LI_TEST(SharedPtr, CountStaysExactUnderContention) {
 
 // Owners let go at the same moment, so exactly one of them must destroy the object
 LI_TEST(SharedPtr, LastOwnerRaceDestroysOnce) {
-    constexpr int ThreadCount = 8;
+    static constexpr int ThreadCount = 8;
     static constexpr int Rounds = 5000;
 
     class CountedAtomically {
@@ -331,18 +333,25 @@ LI_TEST(SharedPtr, LastOwnerRaceDestroysOnce) {
     };
 
     std::atomic_int destroyed{0};
-    std::atomic_int round{-1};
-    std::atomic_int finished{0};
+    std::mutex mutex;
+    std::condition_variable roundCondition;
+    std::condition_variable finishedCondition;
+    int round = -1;
+    int finished = 0;
     SharedPtr<CountedAtomically> slots[ThreadCount];
     Thread threads[ThreadCount];
     for(int t = 0; t < ThreadCount; ++t) {
         SharedPtr<CountedAtomically>* slot = &slots[t];
-        LI_REQUIRE(threads[t].Start([slot, &round, &finished]() {
+        LI_REQUIRE(threads[t].Start([slot, &mutex, &roundCondition, &finishedCondition, &round, &finished]() {
             for(int r = 0; r < Rounds; ++r) {
-                while(round.load(std::memory_order_acquire) < r) {
-                }
+                std::unique_lock<std::mutex> lock(mutex);
+                roundCondition.wait(lock, [&round, r]() { return round >= r; });
+                lock.unlock();
                 slot->Reset();
-                finished.fetch_add(1, std::memory_order_acq_rel);
+                lock.lock();
+                if(++finished == ThreadCount) {
+                    finishedCondition.notify_one();
+                }
             }
             return 0;
         }));
@@ -353,10 +362,14 @@ LI_TEST(SharedPtr, LastOwnerRaceDestroysOnce) {
             slot = owner;
         }
         owner.Reset();
-        finished.store(0, std::memory_order_release);
-        round.store(r, std::memory_order_release);
-        while(finished.load(std::memory_order_acquire) < ThreadCount) {
+        {
+            std::lock_guard<std::mutex> lock(mutex);
+            finished = 0;
+            round = r;
         }
+        roundCondition.notify_all();
+        std::unique_lock<std::mutex> lock(mutex);
+        finishedCondition.wait(lock, [&finished]() { return finished == ThreadCount; });
     }
     for(Thread& thread : threads) {
         LI_CHECK(thread.Join());
