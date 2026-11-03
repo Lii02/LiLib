@@ -63,9 +63,9 @@ Inputs aren't validated, so bad values give a degenerate matrix instead of an er
 
 To transform normals under non-uniform scale, use `matrix.Inverse().Transpose().TransformDirection(normal)`, then normalize the result.
 
-## Vec2 and Vec3
+## Vec2, Vec3 and Vec4
 
-`#include "LiLib/Math/Vec2.h"` and `#include "LiLib/Math/Vec3.h"`
+`#include "LiLib/Math/Vec2.h"`, `#include "LiLib/Math/Vec3.h"` and `#include "LiLib/Math/Vec4.h"`
 
 Plain float vectors, passed by value.
 
@@ -96,6 +96,73 @@ const Vec3 scaled = 2.0f * up + Vec3{1.0f, 1.0f, 1.0f};
 | `Rotate(angle)` | `Vec2` only. Counter-clockwise, in radians |
 
 Missing components in braces default to zero, so `Vec3{1.0f, 2.0f}` compiles with `z` at 0. Because `{x, y}` can initialize either type, a `Mat4` method can't overload on both, which is why the 3D point transform is named `TransformPoint3D`.
+
+`Vec4` is smaller, mainly for data sent to shaders. It has `+`, `-`, unary `-`, `*` and `/` by a float, `==`, `!=`, `Dot`, `Length` and `Lerp`, plus `XYZ()` to get a `Vec3`.
+
+## Quat
+
+`#include "LiLib/Math/Quat.h"`
+
+A rotation quaternion, following the same conventions as `Mat4`. A default-constructed `Quat` is the identity, and `a * b` applies `b` first, then `a`.
+
+```cpp
+const Quat yaw = Quat::FromAxisAngle({0.0f, 1.0f, 0.0f}, 0.5f);
+const Vec3 rotated = yaw.Rotate({1.0f, 0.0f, 0.0f});
+const Mat4 model = Mat4::Translation(position) * yaw.ToMat4();
+const Quat halfway = Quat::Identity().Slerp(yaw, 0.5f);
+```
+
+| Function | Description |
+|---|---|
+| `Identity()` | No rotation |
+| `FromAxisAngle(axis, angle)` | Rotation around an axis of any length. A zero axis gives the identity |
+| `FromEuler(angles)` | From x (pitch), y (yaw) and z (roll), applied in the order z, x, y |
+| `LookRotation(forward, up)` | Points -z along `forward`, with +y as close to `up` as possible |
+| `ToEuler()` | The angles `FromEuler` turns back into this rotation. Pitch is in `[-pi/2, pi/2]`, and at exactly +-90 degrees all remaining rotation is reported as yaw |
+| `ToMat4()` | The equivalent rotation matrix |
+| `Rotate(vector)` | Rotates a vector |
+| `Inverse()` | The opposite rotation |
+| `Normalize()` | Unit length, or the identity if the quaternion is too short |
+| `Slerp(to, t)` | Interpolates along the shortest path |
+
+`Rotate` and `Inverse` need a unit quaternion. Everything that builds a rotation returns one.
+
+## AABB
+
+`#include "LiLib/Math/AABB.h"`
+
+An axis-aligned bounding box. A default-constructed `AABB` is empty: expanding it by a point gives a box around that point, and it intersects nothing.
+
+```cpp
+AABB bounds;
+bounds.Expand(Vec3{1.0f, 2.0f, 3.0f});
+bounds.Expand(Vec3{-1.0f, 0.0f, 5.0f});
+const AABB moved = bounds.Transformed(Mat4::Translation({10.0f, 0.0f, 0.0f}));
+```
+
+| Member | Description |
+|---|---|
+| `min`, `max` | The corners |
+| `IsEmpty()` | Whether the box holds nothing |
+| `Center()`, `Extents()` | The middle, and half the size |
+| `Expand(point)`, `Expand(box)` | Grows to include a point or another box |
+| `Contains(point)`, `Intersects(box)` | Overlap tests, which count touching edges |
+| `Transformed(matrix)` | The smallest `AABB` around the transformed box |
+
+## Frustum
+
+`#include "LiLib/Math/Frustum.h"`
+
+Six inward-facing planes for visibility tests, extracted from a view-projection matrix whose clip-space z is in `[0, 1]`, which is what `Mat4` produces.
+
+```cpp
+const Frustum frustum = Frustum::FromMatrix(projection * view);
+if(frustum.Intersects(objectBounds)) {
+    Draw();
+}
+```
+
+The tests are conservative: a shape just outside near a corner may count as intersecting, but a visible shape is never rejected.
 
 ## Rect
 

@@ -36,7 +36,9 @@ int main() {
 | `Algorithms` | `StableSort` | [Algorithms](docs/Algorithms.md) |
 | `Strings` | `String`, `StringView`, `Base64` | [Strings](docs/Strings.md) |
 | `Threading` | `Thread`, `Mutex`, `LockGuard`, `ConditionVariable` | [Threading](docs/Threading.md) |
-| `Math` | `Vec2`, `Vec3`, `Mat4`, `Rect`, `Color`, `Random`, `Math` | [Math](docs/Math.md) |
+| `Math` | `Vec2`, `Vec3`, `Vec4`, `Mat4`, `Quat`, `AABB`, `Frustum`, `Rect`, `Color`, `Random`, `Math` | [Math](docs/Math.md) |
+| `IO` | `File` | [IO](docs/IO.md) |
+| `Reflection` | Runtime type information, properties, methods, globals and variants | [Reflection](docs/Reflection.md) |
 
 Everything is in the `LiLib` namespace, and macros are prefixed `LI_`.
 
