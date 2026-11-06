@@ -61,8 +61,8 @@ public:
 
     Vec2 Lerp(Vec2 to, float t) const { return {x + (to.x - x) * t, y + (to.y - y) * t}; }
 
-    float x;
-    float y;
+    float x = 0.0f;
+    float y = 0.0f;
 };
 
 } // namespace LiLib

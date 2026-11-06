@@ -22,10 +22,10 @@ public:
 
     Vec4 Lerp(Vec4 to, float t) const { return {x + (to.x - x) * t, y + (to.y - y) * t, z + (to.z - z) * t, w + (to.w - w) * t}; }
 
-    float x;
-    float y;
-    float z;
-    float w;
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
+    float w = 0.0f;
 };
 
 } // namespace LiLib

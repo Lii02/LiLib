@@ -55,9 +55,9 @@ public:
 
     Vec3 Lerp(Vec3 to, float t) const { return {x + (to.x - x) * t, y + (to.y - y) * t, z + (to.z - z) * t}; }
 
-    float x;
-    float y;
-    float z;
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
 };
 
 } // namespace LiLib

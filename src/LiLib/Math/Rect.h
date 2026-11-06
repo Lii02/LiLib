@@ -13,10 +13,10 @@ public:
         return x < other.x + other.width && other.x < x + width && y < other.y + other.height && other.y < y + height;
     }
 
-    float x;
-    float y;
-    float width;
-    float height;
+    float x = 0.0f;
+    float y = 0.0f;
+    float width = 0.0f;
+    float height = 0.0f;
 };
 
 } // namespace LiLib
